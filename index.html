@@ -35,9 +35,10 @@ body {
   margin-top:25px;
   padding:18px 28px;
   border-radius:12px;
-  background:rgba(0,0,0,0.4);
+  background:rgba(20,20,20,0.8); /* ager theke ektu bright */
   backdrop-filter:blur(8px);
   transition:all 0.3s ease;
+  border: 1px solid rgba(255,255,255,0.1);
 }
 .weather h3 { font-size:20px; margin-bottom:8px; }
 .weather p { font-size:16px; margin:4px 0; }
@@ -226,33 +227,35 @@ function updateClock() {
 setInterval(updateClock, 300);
 updateClock();
 
-// Weather - fixed with wttr.in, no API key needed
+// Weather
 const CITY = 'Dhaka';
+const API_KEYS = ['d1ba7c71b74787bbb8649a10d4b651f4','ec2fec93f72b555437a22ec81591956b'];
+
 async function getWeather() {
+  const key = API_KEYS[Math.floor(Math.random() * API_KEYS.length)];
   try {
-    const res = await fetch(`https://wttr.in/${CITY}?format=j1`);
-    if(!res.ok) throw new Error('Weather fetch failed');
+    const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${CITY}&appid=${key}&units=metric`);
+    if(!res.ok) throw new Error('API failed');
     const data = await res.json();
     
-    const current = data.current_condition[0];
-    const temp = current.temp_C;
-    const desc = current.weatherDesc[0].value;
-    const humidity = current.humidity;
-    const wind = current.windspeedKmph;
-    
     document.getElementById('weather').innerHTML = `
-      <h3>${CITY}, Bangladesh</h3>
-      <p>${temp}°C - ${desc}</p>
-      <p>আর্দ্রতা: ${humidity}% | বাতাস: ${wind} কি.মি/ঘ</p>
+      <h3 style="color:hsl(${hue}, 100%, 75%); text-shadow:0 0 10px hsl(${hue}, 100%, 60%);">
+        ${data.name}, ${data.sys.country}
+      </h3>
+      <p style="color:hsl(${hue+40}, 100%, 85%); font-weight:bold;">
+        ${Math.round(data.main.temp)}°C - ${data.weather[0].main}
+      </p>
+      <p style="color:hsl(${hue+80}, 100%, 80%);">
+        আর্দ্রতা: ${data.main.humidity}% | বাতাস: ${data.wind.speed} মি/সে
+      </p>
     `;
   } catch(err) {
-    document.getElementById('weather').innerHTML = '<p class="loading">আবহাওয়া পাওয়া যায়নি</p>';
+    document.getElementById('weather').innerHTML = 
+      '<p class="loading" style="color:#fff; text-shadow:0 0 10px #fff;">আবহাওয়া পাওয়া যায়নি</p>';
   }
 }
 getWeather();
-setInterval(getWeather, 600000);
-  
-// Alarm
+setInterval(getWeather, 600000);// Alarm
 let alarmTime = null;
 let alarmSound = new Audio('https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg');
 function setAlarm() {
