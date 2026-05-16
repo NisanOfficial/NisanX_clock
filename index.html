@@ -9,7 +9,6 @@
 
 body {
   background:#000;
-  color:#0ff;
   font-family:'Courier New', monospace;
   overflow:hidden;
   display:flex;
@@ -30,36 +29,30 @@ body {
 .clock {
   font-size:clamp(60px, 15vw, 180px);
   font-weight:bold;
-  text-shadow:0 0 20px #0ff, 0 0 40px #0ff, 0 0 60px #0ff;
   animation:blink 2s infinite alternate;
   letter-spacing:5px;
+  transition:color 1s ease;
 }
 
 .date {
   font-size:clamp(16px, 2.5vw, 22px);
   margin-top:10px;
   line-height:1.6;
+  transition:color 1s ease;
 }
-
-.date.en { color:#0ff; }
-.date.bn { color:#0ff8; font-size:85%; }
-.date.hijri { color:#0ff6; font-size:75%; }
-.date.bn-time { color:#0ff4; font-size:65%; }
 
 .weather {
   margin-top:25px;
   padding:18px 28px;
-  border:1px solid #0ff5;
   border-radius:12px;
   background:rgba(0,0,0,0.4);
   backdrop-filter:blur(8px);
-  box-shadow:0 0 20px #0ff3;
+  transition:all 1s ease;
 }
 
 .weather h3 {
   font-size:20px;
   margin-bottom:8px;
-  color:#0ff;
 }
 
 .weather p {
@@ -69,19 +62,12 @@ body {
 
 button {
   background:transparent;
-  border:1px solid #0ff;
-  color:#0ff;
   padding:8px 18px;
   border-radius:6px;
   cursor:pointer;
   font-family:'Courier New', monospace;
   margin-top:20px;
-  text-shadow:0 0 10px #0ff;
-  transition:0.3s;
-}
-button:hover {
-  background:rgba(0,255,255,0.1);
-  box-shadow:0 0 20px #0ff;
+  transition:all 0.5s ease;
 }
 
 @keyframes blink {
@@ -90,7 +76,7 @@ button:hover {
 }
 
 .loading { color:#666; font-size:15px; }
-.eid { color:#ff0; text-shadow:0 0 15px #ff0; font-weight:bold; }
+.eid { font-weight:bold; }
 </style>
 </head>
 <body>
@@ -112,7 +98,9 @@ button:hover {
 <script type="module">
 import * as THREE from 'three';
 
-// Star background
+let hue = 0;
+
+// Star background with color changing
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ canvas:document.getElementById('bg-canvas'), alpha:true });
@@ -128,7 +116,7 @@ for(let i=0; i<starCount; i++) {
 }
 const geometry = new THREE.BufferGeometry();
 geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-const material = new THREE.PointsMaterial({ color:0x00ff00, size:0.05, transparent:true, opacity:0.8 });
+const material = new THREE.PointsMaterial({ size:0.05, transparent:true, opacity:0.8 });
 const stars = new THREE.Points(geometry, material);
 scene.add(stars);
 
@@ -136,6 +124,11 @@ function animate() {
   requestAnimationFrame(animate);
   stars.rotation.y += 0.0005;
   stars.rotation.x += 0.0002;
+
+  // Change star color with hue
+  hue = (hue + 0.1) % 360;
+  stars.material.color.setHSL(hue/360, 1, 0.5);
+
   renderer.render(scene, camera);
 }
 animate();
@@ -169,7 +162,6 @@ function getBanglaDate(date) {
 
   const dayName = bDays[date.getDay()];
   const bnNumbers = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
-
   const toBanglaNum = (num) => String(num).replace(/\d/g, d => bnNumbers[d]);
 
   return {
@@ -208,35 +200,45 @@ function getHijriDate(date) {
   return { day: hijriDay, month: months[hijriMonth-1], year: hijriYear, full: `${hijriDay} ${months[hijriMonth-1]} ${hijriYear} AH` };
 }
 
-// Clock + Calendar
+// Clock + Calendar with auto color
 function updateClock() {
   const now = new Date();
-
-  // English
   const timeEN = now.toLocaleTimeString('en-US', { hour12:false });
   const dateEN = now.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 
-  // Bangla
   const bn = getBanglaDate(now);
-
-  // Hijri
   const hijri = getHijriDate(now);
 
-  // Check for Qurbani Eid - Dhu al-Hijjah 10
+  // Update colors every second
+  hue = (hue + 0.5) % 360;
+  const color1 = `hsl(${hue}, 100%, 60%)`;
+  const color2 = `hsl(${hue+40}, 100%, 70%)`;
+  const color3 = `hsl(${hue+80}, 100%, 65%)`;
+  const color4 = `hsl(${hue+120}, 100%, 60%)`;
+
+  document.getElementById('clock').style.color = color1;
+  document.getElementById('clock').style.textShadow = `0 0 20px ${color1}, 0 0 40px ${color1}, 0 0 60px ${color1}`;
+
   let eidTag = '';
   if(hijri.month === "Dhu al-Hijjah" && hijri.day === 10) {
-    eidTag = '<div class="eid">🕌 Qurbani Eid Mubarak!</div>';
+    eidTag = `<div class="eid" style="color:hsl(${hue+180}, 100%, 60%); text-shadow:0 0 15px hsl(${hue+180}, 100%, 60%);">🕌 Qurbani Eid Mubarak!</div>`;
   }
 
-  document.getElementById('clock').textContent = timeEN;
   document.getElementById('date').innerHTML = `
-    <div class="en">${dateEN}</div>
-    <div class="bn">${bn.dayName}, ${bn.date} BS</div>
-    <div class="hijri">${hijri.full}</div>
-    <div class="bn-time">${bn.time}</div>
+    <div style="color:${color1}">${dateEN}</div>
+    <div style="color:${color2}; font-size:85%;">${bn.dayName}, ${bn.date} BS</div>
+    <div style="color:${color3}; font-size:75%;">${hijri.full}</div>
+    <div style="color:${color4}; font-size:65%;">${bn.time}</div>
     ${eidTag}
   `;
+
+  // Update weather box colors
+  const weatherBox = document.getElementById('weather');
+  weatherBox.style.border = `1px solid ${color1}80`;
+  weatherBox.style.boxShadow = `0 0 20px ${color1}40`;
+  weatherBox.querySelector('h3').style.color = color1;
 }
+
 setInterval(updateClock, 1000);
 updateClock();
 
@@ -258,6 +260,7 @@ async function getWeather() {
       <p>${Math.round(data.main.temp)}°C - ${data.weather[0].main}</p>
       <p>আর্দ্রতা: ${data.main.humidity}% | বাতাস: ${data.wind.speed} মি/সে</p>
     `;
+    updateClock(); // Refresh colors
   } catch(err) {
     document.getElementById('weather').innerHTML = '<p class="loading">আবহাওয়া পাওয়া যায়নি</p>';
   }
@@ -275,8 +278,8 @@ const quotes = [
 function updateQuote() {
   const q = quotes[Math.floor(Math.random() * quotes.length)];
   const weatherDiv = document.getElementById('weather');
-  if(weatherDiv.innerHTML.includes('weather')) {
-    weatherDiv.innerHTML += `<p style="font-size:14px; color:#0ff6; margin-top:10px;">"${q}"</p>`;
+  if(!weatherDiv.innerHTML.includes('quote')) {
+    weatherDiv.innerHTML += `<p class="quote" style="font-size:14px; margin-top:10px; color:hsl(${hue+160}, 100%, 65%);">"${q}"</p>`;
   }
 }
 setInterval(updateQuote, 15000);
@@ -305,6 +308,21 @@ const btn = document.createElement('button');
 btn.textContent = 'অ্যালার্ম সেট করো';
 btn.onclick = setAlarm;
 document.body.appendChild(btn);
+
+// Update button color
+setInterval(() => {
+  btn.style.color = `hsl(${hue+200}, 100%, 60%)`;
+  btn.style.border = `1px solid hsl(${hue+200}, 100%, 60%)`;
+  btn.style.textShadow = `0 0 10px hsl(${hue+200}, 100%, 60%)`;
+  btn.onmouseover = () => {
+    btn.style.background = `hsla(${hue+200}, 100%, 60%, 0.1)`;
+    btn.style.boxShadow = `0 0 20px hsl(${hue+200}, 100%, 60%)`;
+  };
+  btn.onmouseout = () => {
+    btn.style.background = 'transparent';
+    btn.style.boxShadow = 'none';
+  };
+}, 100);
 </script>
 
 </body>
