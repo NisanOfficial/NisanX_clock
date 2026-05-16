@@ -17,18 +17,13 @@ body {
   height:100vh;
   text-align:center;
 }
-#bg-canvas {
-  position:fixed;
-  top:0; left:0;
-  width:100%; height:100%;
-  z-index:-1;
-}
+#bg-canvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:-1; }
 .clock {
   font-size:clamp(60px, 15vw, 180px);
   font-weight:bold;
   animation:blink 2s infinite alternate;
   letter-spacing:5px;
-  transition:color 0.3s ease; /* 0.3 sec transition */
+  transition:color 0.3s ease;
 }
 .date {
   font-size:clamp(16px, 2.5vw, 22px);
@@ -103,6 +98,8 @@ function animate() {
   requestAnimationFrame(animate);
   stars.rotation.y += 0.0005;
   stars.rotation.x += 0.0002;
+  hue = (hue + 1.2) % 360;
+  stars.material.color.setHSL(hue/360, 1, 0.5);
   renderer.render(scene, camera);
 }
 animate();
@@ -113,26 +110,49 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Bangla date converter
+// Corrected Bangla Date Converter
 function getBanglaDate(date) {
   const gYear = date.getFullYear();
-  const gMonth = date.getMonth() + 1;
+  const gMonth = date.getMonth() + 1; // 1-12
   const gDay = date.getDate();
+
+  // Bangla year calculation
   let bYear = gYear - 593;
   if(gMonth < 4 || (gMonth === 4 && gDay < 14)) bYear--;
+
+  // Bangla months
   const bMonths = ["বৈশাখ","জ্যৈষ্ঠ","আষাঢ়","শ্রাবণ","ভাদ্র","আশ্বিন","কার্তিক","অগ্রহায়ণ","পৌষ","মাঘ","ফাল্গুন","চৈত্র"];
   const bDays = ["রবিবার","সোমবার","মঙ্গলবার","বুধবার","বৃহস্পতিবার","শুক্রবার","শনিবার"];
+
+  // Calculate Bangla month and day
   let bMonth, bDay;
-  if(gMonth >= 4 && gDay >= 14) {
-    bMonth = gMonth - 4;
+
+  if(gMonth === 4 && gDay >= 14) {
+    bMonth = 1; // Boishakh
     bDay = gDay - 13;
+  } else if(gMonth === 5) {
+    if(gDay <= 15) {
+      bMonth = 1; // Boishakh
+      bDay = gDay + 17;
+    } else {
+      bMonth = 2; // Joishtho
+      bDay = gDay - 15;
+    }
+  } else if(gMonth === 6 && gDay <= 15) {
+    bMonth = 2; // Joishtho
+    bDay = gDay + 15;
   } else {
-    bMonth = gMonth + 8;
-    bDay = gDay + 17;
+    // General calculation for other months
+    const offsets = [0, 0, 0, 0, 13, 15, 15, 16, 16, 16, 15, 15, 15];
+    bMonth = gMonth - 4;
+    if(bMonth <= 0) bMonth += 12;
+    bDay = gDay + offsets[gMonth];
   }
+
   const dayName = bDays[date.getDay()];
   const bnNumbers = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
   const toBanglaNum = (num) => String(num).replace(/\d/g, d => bnNumbers[d]);
+
   return {
     dayName: dayName,
     date: `${toBanglaNum(bDay)} ${bMonths[bMonth-1]} ${toBanglaNum(bYear)}`,
@@ -162,7 +182,7 @@ function getHijriDate(date) {
   return { day: hijriDay, month: months[hijriMonth-1], year: hijriYear, full: `${hijriDay} ${months[hijriMonth-1]} ${hijriYear} AH` };
 }
 
-// Clock + Calendar with 0.3 sec color change
+// Clock + Calendar
 function updateClock() {
   const now = new Date();
   if(isNaN(now.getTime())) {
@@ -175,7 +195,6 @@ function updateClock() {
   const bn = getBanglaDate(now);
   const hijri = getHijriDate(now);
 
-  hue = (hue + 1.2) % 360; // 0.3 sec cycle - faster change
   const color1 = `hsl(${hue}, 100%, 60%)`;
   const color2 = `hsl(${hue+40}, 100%, 70%)`;
   const color3 = `hsl(${hue+80}, 100%, 65%)`;
@@ -202,10 +221,8 @@ function updateClock() {
   weatherBox.style.border = `1px solid ${color1}80`;
   weatherBox.style.boxShadow = `0 0 20px ${color1}40`;
   weatherBox.querySelector('h3').style.color = color1;
-  stars.material.color.setHSL(hue/360, 1, 0.5); // Stars also change
 }
 
-// Change color every 300ms = 0.3 sec
 setInterval(updateClock, 300);
 updateClock();
 
