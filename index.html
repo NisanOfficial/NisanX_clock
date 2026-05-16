@@ -81,7 +81,7 @@ const renderer = new THREE.WebGLRenderer({ canvas:document.getElementById('bg-ca
 renderer.setSize(window.innerWidth, window.innerHeight);
 camera.position.z = 5;
 
-const starCount = 1500;
+const starCount = 5000;
 const positions = new Float32Array(starCount * 3);
 for(let i=0; i<starCount; i++) {
   positions[i*3] = (Math.random()-0.5)*25;
@@ -90,15 +90,15 @@ for(let i=0; i<starCount; i++) {
 }
 const geometry = new THREE.BufferGeometry();
 geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-const material = new THREE.PointsMaterial({ size:0.05, transparent:true, opacity:0.8 });
+const material = new THREE.PointsMaterial({ size:0.09, transparent:true, opacity:0.8 });
 const stars = new THREE.Points(geometry, material);
 scene.add(stars);
 
 function animate() {
   requestAnimationFrame(animate);
-  stars.rotation.y += 0.0005;
-  stars.rotation.x += 0.0002;
-  hue = (hue + 1.2) % 360;
+  stars.rotation.y += 0.0003;
+  stars.rotation.x += 0.0005;
+  hue = (hue + 0.9) % 360;
   stars.material.color.setHSL(hue/360, 1, 0.5);
   renderer.render(scene, camera);
 }
@@ -129,21 +129,21 @@ function getBanglaDate(date) {
 
   if(gMonth === 4 && gDay >= 14) {
     bMonth = 1; // Boishakh
-    bDay = gDay - 13;
+    bDay = gDay - 14;
   } else if(gMonth === 5) {
     if(gDay <= 15) {
       bMonth = 1; // Boishakh
-      bDay = gDay + 17;
+      bDay = gDay + 16;
     } else {
       bMonth = 2; // Joishtho
-      bDay = gDay - 15;
+      bDay = gDay - 14;
     }
   } else if(gMonth === 6 && gDay <= 15) {
     bMonth = 2; // Joishtho
     bDay = gDay + 15;
   } else {
     // General calculation for other months
-    const offsets = [0, 0, 0, 0, 13, 15, 15, 16, 16, 16, 15, 15, 15];
+    const offsets = [0, 0, 0, 0, 14, 15, 15, 16, 16, 16, 15, 15, 15];
     bMonth = gMonth - 4;
     if(bMonth <= 0) bMonth += 12;
     bDay = gDay + offsets[gMonth];
@@ -156,7 +156,7 @@ function getBanglaDate(date) {
   return {
     dayName: dayName,
     date: `${toBanglaNum(bDay)} ${bMonths[bMonth-1]} ${toBanglaNum(bYear)}`,
-    time: date.toLocaleTimeString('bn-BD', { hour12:false })
+    time: date.toLocaleTimeString('bn-BD', { hour12:true })
   };
 }
 
