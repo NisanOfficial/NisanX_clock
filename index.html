@@ -17,6 +17,7 @@ body {
   justify-content:center;
   align-items:center;
   height:100vh;
+  text-align:center;
 }
 
 #bg-canvas {
@@ -35,32 +36,52 @@ body {
 }
 
 .date {
-  font-size:clamp(18px, 3vw, 28px);
+  font-size:clamp(16px, 2.5vw, 22px);
   margin-top:10px;
-  color:#0ff8;
-  text-shadow:0 0 10px #0ff;
+  line-height:1.6;
 }
 
+.date.en { color:#0ff; }
+.date.bn { color:#0ff8; font-size:85%; }
+.date.hijri { color:#0ff6; font-size:75%; }
+.date.bn-time { color:#0ff4; font-size:65%; }
+
 .weather {
-  margin-top:30px;
-  padding:20px 30px;
+  margin-top:25px;
+  padding:18px 28px;
   border:1px solid #0ff5;
   border-radius:12px;
   background:rgba(0,0,0,0.4);
   backdrop-filter:blur(8px);
-  text-align:center;
   box-shadow:0 0 20px #0ff3;
 }
 
 .weather h3 {
-  font-size:22px;
-  margin-bottom:10px;
+  font-size:20px;
+  margin-bottom:8px;
   color:#0ff;
 }
 
 .weather p {
-  font-size:18px;
-  margin:5px 0;
+  font-size:16px;
+  margin:4px 0;
+}
+
+button {
+  background:transparent;
+  border:1px solid #0ff;
+  color:#0ff;
+  padding:8px 18px;
+  border-radius:6px;
+  cursor:pointer;
+  font-family:'Courier New', monospace;
+  margin-top:20px;
+  text-shadow:0 0 10px #0ff;
+  transition:0.3s;
+}
+button:hover {
+  background:rgba(0,255,255,0.1);
+  box-shadow:0 0 20px #0ff;
 }
 
 @keyframes blink {
@@ -68,10 +89,8 @@ body {
  100% { opacity:0.7; }
 }
 
-.loading {
-  color:#666;
-  font-size:16px;
-}
+.loading { color:#666; font-size:15px; }
+.eid { color:#ff0; text-shadow:0 0 15px #ff0; font-weight:bold; }
 </style>
 </head>
 <body>
@@ -79,7 +98,7 @@ body {
 <canvas id="bg-canvas"></canvas>
 
 <div class="clock" id="clock">00:00:00</div>
-<div class="date" id="date">Loading date...</div>
+<div class="date" id="date">Loading...</div>
 
 <div class="weather" id="weather">
   <h3>Dhaka, Bangladesh</h3>
@@ -107,7 +126,6 @@ for(let i=0; i<starCount; i++) {
   positions[i*3+1] = (Math.random()-0.5)*25;
   positions[i*3+2] = (Math.random()-0.5)*25;
 }
-
 const geometry = new THREE.BufferGeometry();
 geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 const material = new THREE.PointsMaterial({ color:0x00ff00, size:0.05, transparent:true, opacity:0.8 });
@@ -128,18 +146,96 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Clock
+// Bangla date converter
+function getBanglaDate(date) {
+  const gYear = date.getFullYear();
+  const gMonth = date.getMonth() + 1;
+  const gDay = date.getDate();
+
+  let bYear = gYear - 593;
+  if(gMonth < 4 || (gMonth === 4 && gDay < 14)) bYear--;
+
+  const bMonths = ["বৈশাখ","জ্যৈষ্ঠ","আষাঢ়","শ্রাবণ","ভাদ্র","আশ্বিন","কার্তিক","অগ্রহায়ণ","পৌষ","মাঘ","ফাল্গুন","চৈত্র"];
+  const bDays = ["রবিবার","সোমবার","মঙ্গলবার","বুধবার","বৃহস্পতিবার","শুক্রবার","শনিবার"];
+
+  let bMonth, bDay;
+  if(gMonth >= 4 && gDay >= 14) {
+    bMonth = gMonth - 4;
+    bDay = gDay - 13;
+  } else {
+    bMonth = gMonth + 8;
+    bDay = gDay + 17;
+  }
+
+  const dayName = bDays[date.getDay()];
+  const bnNumbers = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
+
+  const toBanglaNum = (num) => String(num).replace(/\d/g, d => bnNumbers[d]);
+
+  return {
+    dayName: dayName,
+    date: `${toBanglaNum(bDay)} ${bMonths[bMonth-1]} ${toBanglaNum(bYear)}`,
+    year: toBanglaNum(bYear),
+    time: date.toLocaleTimeString('bn-BD', { hour12:false })
+  };
+}
+
+// Hijri date converter
+function getHijriDate(date) {
+  const gDay = date.getDate();
+  const gMonth = date.getMonth() + 1;
+  const gYear = date.getFullYear();
+
+  const jd = Math.floor((1461 * (gYear + 4800 + Math.floor((gMonth - 14) / 12))) / 4) +
+             Math.floor((367 * (gMonth - 2 - 12 * (Math.floor((gMonth - 14) / 12)))) / 12) -
+             Math.floor((3 * Math.floor((gYear + 4900 + Math.floor((gMonth - 14) / 12)) / 100)) / 4) +
+             gDay - 32075;
+
+  const l = jd - 1948440 + 10632;
+  const n = Math.floor((l - 1) / 10631);
+  const i = l - 10631 * n + 354;
+  const j = (Math.floor((10985 - i) / 5316)) * (Math.floor((50 * i) / 17719)) + (Math.floor(i / 5670)) * (Math.floor((43 * i) / 15238));
+  const i2 = i - Math.floor((30 - Math.floor(j / 30)) * (Math.floor(j / 30)) * (Math.floor(3 * j / 31) / 16)) - Math.floor((j / 16)) * (Math.floor((365 - Math.floor((22 * j) / 31)) / 7));
+  const j2 = Math.floor(j / 30) + 12 * n + 1;
+
+  const hijriYear = Math.floor((j2 + 12) / 12);
+  const hijriMonth = j2 - 12 * (Math.floor(j2 / 12));
+  const hijriDay = i2 - 29 * Math.floor(hijriMonth / 11);
+
+  const months = ["Muharram","Safar","Rabi al-Awwal","Rabi al-Thani","Jumada al-Awwal","Jumada al-Thani",
+                  "Rajab","Sha'ban","Ramadan","Shawwal","Dhu al-Qi'dah","Dhu al-Hijjah"];
+
+  return { day: hijriDay, month: months[hijriMonth-1], year: hijriYear, full: `${hijriDay} ${months[hijriMonth-1]} ${hijriYear} AH` };
+}
+
+// Clock + Calendar
 function updateClock() {
   const now = new Date();
-  const time = now.toLocaleTimeString('en-US', { hour12:false });
-  const date = now.toLocaleDateString('en-US', { 
-    weekday:'long', 
-    year:'numeric', 
-    month:'long', 
-    day:'numeric' 
-  });
-  document.getElementById('clock').textContent = time;
-  document.getElementById('date').textContent = date;
+
+  // English
+  const timeEN = now.toLocaleTimeString('en-US', { hour12:false });
+  const dateEN = now.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  // Bangla
+  const bn = getBanglaDate(now);
+
+  // Hijri
+  const hijri = getHijriDate(now);
+
+  // Check for Qurbani Eid - Dhu al-Hijjah 10
+  let eidTag = '';
+  if(hijri.month === "Dhu al-Hijjah" && hijri.day === 10) {
+    eidTag = '<div class="eid">🕌 Qurbani Eid Mubarak!</div>';
+  }
+
+  document.getElementById('clock').textContent = timeEN;
+  document.getElementById('date').innerHTML = `
+    <div class="en">${dateEN}</div>
+    <div class="bn">${bn.dayName}, ${bn.date} BS</div>
+    <div class="hijri">${hijri.full}</div>
+    <div class="bn-time">${bn.time}</div>
+    ${eidTag}
+  `;
 }
 setInterval(updateClock, 1000);
 updateClock();
@@ -153,36 +249,62 @@ const CITY = 'Dhaka';
 
 async function getWeather() {
   const key = API_KEYS[Math.floor(Math.random() * API_KEYS.length)];
-  
   try {
     const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${CITY}&appid=${key}&units=metric`);
     if(!res.ok) throw new Error('API failed');
-    
     const data = await res.json();
     document.getElementById('weather').innerHTML = `
       <h3>${data.name}, ${data.sys.country}</h3>
       <p>${Math.round(data.main.temp)}°C - ${data.weather[0].main}</p>
-      <p>Humidity: ${data.main.humidity}% | Wind: ${data.wind.speed} m/s</p>
+      <p>আর্দ্রতা: ${data.main.humidity}% | বাতাস: ${data.wind.speed} মি/সে</p>
     `;
   } catch(err) {
-    // If first key fails, try the other one
-    const otherKey = API_KEYS.find(k => k !== key);
-    try {
-      const res2 = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${CITY}&appid=${otherKey}&units=metric`);
-      const data2 = await res2.json();
-      document.getElementById('weather').innerHTML = `
-        <h3>${data2.name}, ${data2.sys.country}</h3>
-        <p>${Math.round(data2.main.temp)}°C - ${data2.weather[0].main}</p>
-        <p>Humidity: ${data2.main.humidity}% | Wind: ${data2.wind.speed} m/s</p>
-      `;
-    } catch(err2) {
-      document.getElementById('weather').innerHTML = '<p class="loading">Weather unavailable</p>';
-    }
+    document.getElementById('weather').innerHTML = '<p class="loading">আবহাওয়া পাওয়া যায়নি</p>';
   }
 }
-
 getWeather();
 setInterval(getWeather, 600000);
+
+// Random Quote
+const quotes = [
+  "সময় কারো জন্য থেমে থাকে না।",
+  "Do it now. Later becomes never.",
+  "ধৈর্য ধরো, সফলতা আসবেই।",
+  "Every second is a chance to start again."
+];
+function updateQuote() {
+  const q = quotes[Math.floor(Math.random() * quotes.length)];
+  const weatherDiv = document.getElementById('weather');
+  if(weatherDiv.innerHTML.includes('weather')) {
+    weatherDiv.innerHTML += `<p style="font-size:14px; color:#0ff6; margin-top:10px;">"${q}"</p>`;
+  }
+}
+setInterval(updateQuote, 15000);
+updateQuote();
+
+// Alarm
+let alarmTime = null;
+let alarmSound = new Audio('https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg');
+function setAlarm() {
+  const time = prompt("অ্যালার্ম সেট করো [HH:MM] 24 ঘন্টা ফরম্যাটে:");
+  if(time) {
+    alarmTime = time;
+    alert("অ্যালার্ম সেট হয়েছে " + time + " এ");
+  }
+}
+setInterval(() => {
+  const now = new Date().toTimeString().slice(0,5);
+  if(alarmTime === now) {
+    alarmSound.play();
+    alert("⏰ অ্যালার্ম বাজছে!");
+    alarmTime = null;
+  }
+}, 1000);
+
+const btn = document.createElement('button');
+btn.textContent = 'অ্যালার্ম সেট করো';
+btn.onclick = setAlarm;
+document.body.appendChild(btn);
 </script>
 
 </body>
