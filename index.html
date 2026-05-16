@@ -226,19 +226,24 @@ function updateClock() {
 setInterval(updateClock, 300);
 updateClock();
 
-// Weather
-const API_KEYS = ['d1ba7c71b74787bbb8649a10d4b651f4','ec2fec93f72b555437a22ec81591956b'];
+// Weather - fixed with wttr.in, no API key needed
 const CITY = 'Dhaka';
 async function getWeather() {
-  const key = API_KEYS[Math.floor(Math.random() * API_KEYS.length)];
   try {
-    const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${CITY}&appid=${key}&units=metric`);
-    if(!res.ok) throw new Error('API failed');
+    const res = await fetch(`https://wttr.in/${CITY}?format=j1`);
+    if(!res.ok) throw new Error('Weather fetch failed');
     const data = await res.json();
+    
+    const current = data.current_condition[0];
+    const temp = current.temp_C;
+    const desc = current.weatherDesc[0].value;
+    const humidity = current.humidity;
+    const wind = current.windspeedKmph;
+    
     document.getElementById('weather').innerHTML = `
-      <h3>${data.name}, ${data.sys.country}</h3>
-      <p>${Math.round(data.main.temp)}°C - ${data.weather[0].main}</p>
-      <p>আর্দ্রতা: ${data.main.humidity}% | বাতাস: ${data.wind.speed} মি/সে</p>
+      <h3>${CITY}, Bangladesh</h3>
+      <p>${temp}°C - ${desc}</p>
+      <p>আর্দ্রতা: ${humidity}% | বাতাস: ${wind} কি.মি/ঘ</p>
     `;
   } catch(err) {
     document.getElementById('weather').innerHTML = '<p class="loading">আবহাওয়া পাওয়া যায়নি</p>';
@@ -246,7 +251,7 @@ async function getWeather() {
 }
 getWeather();
 setInterval(getWeather, 600000);
-
+  
 // Alarm
 let alarmTime = null;
 let alarmSound = new Audio('https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg');
