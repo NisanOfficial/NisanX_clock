@@ -82,7 +82,7 @@ body {
 <div class="date" id="date">Loading date...</div>
 
 <div class="weather" id="weather">
-  <h3>DHaka, Bangladesh</h3>
+  <h3>Dhaka, Bangladesh</h3>
   <p class="loading">Loading weather...</p>
 </div>
 
@@ -131,7 +131,6 @@ window.addEventListener('resize', () => {
 // Clock
 function updateClock() {
   const now = new Date();
-  
   const time = now.toLocaleTimeString('en-US', { hour12:false });
   const date = now.toLocaleDateString('en-US', { 
     weekday:'long', 
@@ -139,35 +138,50 @@ function updateClock() {
     month:'long', 
     day:'numeric' 
   });
-  
   document.getElementById('clock').textContent = time;
   document.getElementById('date').textContent = date;
 }
 setInterval(updateClock, 1000);
 updateClock();
 
-// Weather - OpenWeather API
-const API_KEY = 'YOUR_API_KEY'; // free te nite hobe openweathermap.org theke
+// Weather with random API key
+const API_KEYS = [
+  'd1ba7c71b74787bbb8649a10d4b651f4',
+  'ec2fec93f72b555437a22ec81591956b'
+];
 const CITY = 'Dhaka';
 
 async function getWeather() {
+  const key = API_KEYS[Math.floor(Math.random() * API_KEYS.length)];
+  
   try {
-    const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${CITY}&appid=${API_KEY}&units=metric`);
-    const data = await res.json();
+    const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${CITY}&appid=${key}&units=metric`);
+    if(!res.ok) throw new Error('API failed');
     
+    const data = await res.json();
     document.getElementById('weather').innerHTML = `
       <h3>${data.name}, ${data.sys.country}</h3>
       <p>${Math.round(data.main.temp)}°C - ${data.weather[0].main}</p>
       <p>Humidity: ${data.main.humidity}% | Wind: ${data.wind.speed} m/s</p>
     `;
   } catch(err) {
-    document.getElementById('weather').innerHTML = '<p class="loading">Weather unavailable</p>';
-    console.error(err);
+    // If first key fails, try the other one
+    const otherKey = API_KEYS.find(k => k !== key);
+    try {
+      const res2 = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${CITY}&appid=${otherKey}&units=metric`);
+      const data2 = await res2.json();
+      document.getElementById('weather').innerHTML = `
+        <h3>${data2.name}, ${data2.sys.country}</h3>
+        <p>${Math.round(data2.main.temp)}°C - ${data2.weather[0].main}</p>
+        <p>Humidity: ${data2.main.humidity}% | Wind: ${data2.wind.speed} m/s</p>
+      `;
+    } catch(err2) {
+      document.getElementById('weather').innerHTML = '<p class="loading">Weather unavailable</p>';
+    }
   }
 }
 
 getWeather();
-// 10 min por update
 setInterval(getWeather, 600000);
 </script>
 
