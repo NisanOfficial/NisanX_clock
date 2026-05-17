@@ -35,7 +35,7 @@ body {
   margin-top:25px;
   padding:18px 28px;
   border-radius:12px;
-  background:rgba(20,20,20,0.8); /* ager theke ektu bright */
+  background:rgba(20,20,20,0.8);
   backdrop-filter:blur(8px);
   transition:all 0.3s ease;
   border: 1px solid rgba(255,255,255,0.1);
@@ -74,6 +74,16 @@ button {
 import * as THREE from 'three';
 
 let hue = 0;
+
+// Random quotes array
+const quotes = [
+  "সময় কাউকে অপেক্ষা করে না",
+  "আজকের কাজ কালকের জন্য ফেলে রেখো না",
+  "ধৈর্য ধরো, সফলতা আসবেই",
+  "নিজেকে বিশ্বাস করো",
+  "ছোট ছোট পদক্ষেপই বড় সাফল্য আনে"
+];
+const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
 
 // Star background
 const scene = new THREE.Scene();
@@ -114,36 +124,32 @@ window.addEventListener('resize', () => {
 // Corrected Bangla Date Converter
 function getBanglaDate(date) {
   const gYear = date.getFullYear();
-  const gMonth = date.getMonth() + 1; // 1-12
+  const gMonth = date.getMonth() + 1;
   const gDay = date.getDate();
 
-  // Bangla year calculation
   let bYear = gYear - 593;
   if(gMonth < 4 || (gMonth === 4 && gDay < 14)) bYear--;
 
-  // Bangla months
   const bMonths = ["বৈশাখ","জ্যৈষ্ঠ","আষাঢ়","শ্রাবণ","ভাদ্র","আশ্বিন","কার্তিক","অগ্রহায়ণ","পৌষ","মাঘ","ফাল্গুন","চৈত্র"];
   const bDays = ["রবিবার","সোমবার","মঙ্গলবার","বুধবার","বৃহস্পতিবার","শুক্রবার","শনিবার"];
 
-  // Calculate Bangla month and day
   let bMonth, bDay;
 
   if(gMonth === 4 && gDay >= 14) {
-    bMonth = 1; // Boishakh
+    bMonth = 1;
     bDay = gDay - 14;
   } else if(gMonth === 5) {
     if(gDay <= 15) {
-      bMonth = 1; // Boishakh
+      bMonth = 1;
       bDay = gDay + 16;
     } else {
-      bMonth = 2; // Joishtho
+      bMonth = 2;
       bDay = gDay - 14;
     }
   } else if(gMonth === 6 && gDay <= 15) {
-    bMonth = 2; // Joishtho
+    bMonth = 2;
     bDay = gDay + 15;
   } else {
-    // General calculation for other months
     const offsets = [0, 0, 0, 0, 14, 15, 15, 16, 16, 16, 15, 15, 15];
     bMonth = gMonth - 4;
     if(bMonth <= 0) bMonth += 12;
@@ -210,12 +216,27 @@ function updateClock() {
     eidTag = `<div class="eid" style="color:hsl(${hue+180}, 100%, 60%); text-shadow:0 0 15px hsl(${hue+180}, 100%, 60%);">🕌 Qurbani Eid Mubarak!</div>`;
   }
 
+  // Eid countdown
+  const eidDate = new Date(now.getFullYear(), 5, 6); // 6 June 2026
+  const diffTime = eidDate - now;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  let countdownTag = '';
+  if(diffDays > 0 && diffDays < 30) {
+    countdownTag = `<div style="color:hsl(${hue+200}, 100%, 70%); font-size:70%; margin-top:5px;">
+      Eid ul Adha: ${diffDays} din baki
+    </div>`;
+  }
+
   document.getElementById('date').innerHTML = `
     <div style="color:${color1}">${dateEN}</div>
     <div style="color:${color2}; font-size:85%;">${bn.dayName}, ${bn.date} BS</div>
     <div style="color:${color3}; font-size:75%;">${hijri.full}</div>
     <div style="color:${color4}; font-size:65%;">${bn.time}</div>
     ${eidTag}
+    ${countdownTag}
+    <div style="color:hsl(${hue+240}, 100%, 65%); font-size:60%; font-style:italic; margin-top:8px;">
+      "${randomQuote}"
+    </div>
   `;
 
   const weatherBox = document.getElementById('weather');
@@ -227,7 +248,7 @@ function updateClock() {
 setInterval(updateClock, 300);
 updateClock();
 
-// Weather
+// Weather with OpenWeather API
 const CITY = 'Dhaka';
 const API_KEYS = ['d1ba7c71b74787bbb8649a10d4b651f4','ec2fec93f72b555437a22ec81591956b'];
 
@@ -237,7 +258,7 @@ async function getWeather() {
     const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${CITY}&appid=${key}&units=metric`);
     if(!res.ok) throw new Error('API failed');
     const data = await res.json();
-    
+
     document.getElementById('weather').innerHTML = `
       <h3 style="color:hsl(${hue}, 100%, 75%); text-shadow:0 0 10px hsl(${hue}, 100%, 60%);">
         ${data.name}, ${data.sys.country}
@@ -250,12 +271,14 @@ async function getWeather() {
       </p>
     `;
   } catch(err) {
-    document.getElementById('weather').innerHTML = 
+    document.getElementById('weather').innerHTML =
       '<p class="loading" style="color:#fff; text-shadow:0 0 10px #fff;">আবহাওয়া পাওয়া যায়নি</p>';
   }
 }
 getWeather();
-setInterval(getWeather, 600000);// Alarm
+setInterval(getWeather, 600000);
+
+// Alarm
 let alarmTime = null;
 let alarmSound = new Audio('https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg');
 function setAlarm() {
@@ -271,6 +294,20 @@ const btn = document.createElement('button');
 btn.textContent = 'অ্যালার্ম সেট করো';
 btn.onclick = setAlarm;
 document.body.appendChild(btn);
+
+// Battery percentage
+if('getBattery' in navigator) {
+  navigator.getBattery().then(battery => {
+    const batDiv = document.createElement('div');
+    batDiv.style.cssText = `color:hsl(${hue+160}, 100%, 70%); font-size:65%; margin-top:8px;`;
+    const updateBat = () => {
+      batDiv.textContent = `Battery: ${Math.round(battery.level * 100)}%`;
+    };
+    updateBat();
+    battery.addEventListener('levelchange', updateBat);
+    document.body.appendChild(batDiv);
+  });
+}
 
 setInterval(() => {
   btn.style.color = `hsl(${hue+200}, 100%, 60%)`;
